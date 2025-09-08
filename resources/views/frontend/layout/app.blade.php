@@ -13,7 +13,7 @@
 <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Righteous" rel="stylesheet">
 <!-- Custom styles for this template -->
-<link href="{{ asset('frontend/css/mediumish.css')}}" rel="stylesheet">
+<link href="{{ asset('frontend/css/arise.css')}}" rel="stylesheet">
 </head>
 <body>
 @include('frontend.components.home.nav')
@@ -36,6 +36,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
 <script src="{{ asset('frontend/js/bootstrap.min.js') }}"></script>
 <script src="{{ asset('frontend/js/ie10-viewport-bug-workaround.js') }}"></script>
-<script src="{{ asset('frontend/js/mediumish.js')}}"></script>
+<script src="{{ asset('frontend/js/arise.js')}}"></script>
 </body>
 </html>

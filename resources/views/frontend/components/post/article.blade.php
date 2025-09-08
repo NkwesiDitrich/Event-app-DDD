@@ -10,7 +10,7 @@
 				<!-- Begin Top Meta -->
 				<div class="row post-top-meta">
 					<div class="col-md-2">
-						<a href="#"><img class="author-thumb" src="https://www.gravatar.com/avatar/e56154546cf4be74e393c62d1ae9f9d4?s=250&amp;d=mm&amp;r=x" alt="Sal"></a>
+						<a href="#"><img class="author-thumb" src="{{ asset('My_avatar.jpeg') }}" alt="Sal"></a>
 					</div>
 					<div class="col-md-10">
 						<a class="link-dark" href="#">{{ $post->user->firstName }} {{ $post->user->LastName }}</a><a href="#" class="btn follow">Follow</a>
