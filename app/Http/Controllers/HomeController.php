@@ -23,6 +23,7 @@ class HomeController extends Controller
     }
     function EventRegistration (Request $request){
        Registration::create([
+            'date'=>now()->toDateString(),
             'name'=>$request->input('name'),
             'mobile'=>$request->input('mobile'),
             'email'=>$request->input('email'),
