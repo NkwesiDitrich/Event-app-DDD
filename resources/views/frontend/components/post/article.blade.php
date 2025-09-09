@@ -13,9 +13,9 @@
 						<a href="#"><img class="author-thumb" src="https://www.gravatar.com/avatar/e56154546cf4be74e393c62d1ae9f9d4?s=250&amp;d=mm&amp;r=x" alt="Organizer"></a>
 					</div>
 					<div class="col-md-10">
-						<a class="link-dark" href="#">{{ $post->user->firstName }} {{ $post->user->lastName }}</a>
+						<a class="link-dark" href="#">User {{ $post->getUserId() }}</a>
 						<span class="author-description">Event Organizer</span>
-						<span class="post-date">Published: {{ date('d F Y',strtotime($post->created_at)) }}</span>
+						<span class="post-date">Published: {{ $post->getCreatedAt()->format('d F Y') }}</span>
 					</div>
 				</div>
 				<!-- End Top Meta -->
@@ -28,12 +28,12 @@
 					</div>
 				@endif
 				
-				<h1 class="posttitle">{{ $post->title }}</h1>
+				<h1 class="posttitle">{{ $post->getTitle()->getValue() }}</h1>
 
 			</div>
 
 			<!-- Begin Featured Image -->
-			<img class="featured-image img-fluid" src="{{ asset($post->image) }}" alt="{{ $post->title }}">
+			<img class="featured-image img-fluid" src="{{ asset($post->getImage()) }}" alt="{{ $post->getTitle()->getValue() }}">
 			<!-- End Featured Image -->
 
 			<!-- Begin Event Details Section -->
@@ -48,15 +48,15 @@
 							<h5 style="color: #333; margin-bottom: 8px;">
 								<i class="fa fa-calendar" style="color: #007bff; margin-right: 8px;"></i>Date
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ date('l, F j, Y', strtotime($post->date)) }}</p>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->getDate()->getHumanReadableDate() }}</p>
 						</div>
 						
-						@if($post->time)
+						@if($post->getTime()->getValue())
 						<div class="detail-item" style="margin-bottom: 20px;">
 							<h5 style="color: #333; margin-bottom: 8px;">
 								<i class="fa fa-clock" style="color: #007bff; margin-right: 8px;"></i>Time
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->time }}</p>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->getTime()->getValue() }}</p>
 						</div>
 						@endif
 						
@@ -64,7 +64,7 @@
 							<h5 style="color: #333; margin-bottom: 8px;">
 								<i class="fa fa-map-marker-alt" style="color: #007bff; margin-right: 8px;"></i>Location
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->location }}</p>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->getLocation()->getValue() }}</p>
 						</div>
 					</div>
 					
@@ -73,14 +73,14 @@
 							<h5 style="color: #333; margin-bottom: 8px;">
 								<i class="fa fa-tag" style="color: #007bff; margin-right: 8px;"></i>Category
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->category->name ?? 'General' }}</p>
+							<p style="font-size: 16px; margin: 0; color: #666;">Category {{ $post->getCategoryId() }}</p>
 						</div>
 						
 						<div class="detail-item" style="margin-bottom: 20px;">
 							<h5 style="color: #333; margin-bottom: 8px;">
 								<i class="fa fa-user" style="color: #007bff; margin-right: 8px;"></i>Organized By
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->user->firstName }} {{ $post->user->lastName }}</p>
+							<p style="font-size: 16px; margin: 0; color: #666;">User {{ $post->getUserId() }}</p>
 						</div>
 						
 						<div class="detail-item" style="margin-bottom: 20px;">
@@ -88,8 +88,8 @@
 								<i class="fa fa-info-circle" style="color: #007bff; margin-right: 8px;"></i>Event Type
 							</h5>
 							<p style="font-size: 16px; margin: 0; color: #666;">
-								<span class="badge" style="background: {{ $post->type == 'Feature' ? '#28a745' : '#17a2b8' }}; color: white; padding: 5px 10px; border-radius: 15px;">
-									{{ $post->type }} Event
+								<span class="badge" style="background: {{ $post->getType()->getValue() == 'Feature' ? '#28a745' : '#17a2b8' }}; color: white; padding: 5px 10px; border-radius: 15px;">
+									{{ $post->getType()->getValue() }} Event
 								</span>
 							</p>
 						</div>
@@ -102,7 +102,7 @@
 			<div class="article-post">
 				<h3 style="color: #333; margin-bottom: 20px;">About This Event</h3>
 				<p style="font-size: 16px; line-height: 1.6; color: #555;">
-					{{ $post->description }}
+					{{ $post->getDescription()->getValue() }}
 				</p>
 			</div>
 			<!-- End Post Content -->
