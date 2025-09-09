@@ -10,6 +10,7 @@ use App\Domain\Event\ValueObjects\EventDate;
 use App\Domain\Event\ValueObjects\EventTime;
 use App\Domain\Event\ValueObjects\EventLocation;
 use App\Domain\Event\ValueObjects\EventType;
+use App\Models\Eloquent\EloquentEvent;
 use Illuminate\Support\Facades\DB;
 
 class EloquentEventRepository implements EventRepositoryInterface
