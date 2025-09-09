@@ -10,7 +10,6 @@ use App\Domain\Event\ValueObjects\EventDate;
 use App\Domain\Event\ValueObjects\EventTime;
 use App\Domain\Event\ValueObjects\EventLocation;
 use App\Domain\Event\ValueObjects\EventType;
-use App\Models\Eloquent\EloquentEvent;
 use Illuminate\Support\Facades\DB;
 
 class EloquentEventRepository implements EventRepositoryInterface
@@ -354,6 +353,62 @@ class EloquentEventRepository implements EventRepositoryInterface
             ->orderBy('date', 'desc')
             ->offset($offset)
             ->limit($perPage)
+            ->get();
+
+        return $this->mapToEntities($results);
+    }
+
+    // NEW METHODS NEEDED BY HOMECONTROLLER
+    public function getEventsByType(string $type, int $limit = null): array
+    {
+        $query = DB::table($this->table)
+            ->where('type', $type)
+            ->orderBy('date', 'desc');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        $results = $query->get();
+        return $this->mapToEntities($results);
+    }
+
+    public function getEventsByTypeWithPagination(string $type, int $perPage = 10, int $page = 1): array
+    {
+        $offset = ($page - 1) * $perPage;
+        
+        $results = DB::table($this->table)
+            ->where('type', $type)
+            ->orderBy('date', 'desc')
+            ->offset($offset)
+            ->limit($perPage)
+            ->get();
+
+        return $this->mapToEntities($results);
+    }
+
+    public function findByIdWithRelations(int $id): ?Event
+    {
+        // For now, this is the same as findById since we're using raw queries
+        // In a full implementation, you might join with categories, users, etc.
+        $data = DB::table($this->table)
+            ->where('id', $id)
+            ->first();
+        
+        if (!$data) {
+            return null;
+        }
+
+        return $this->mapToEntity($data);
+    }
+
+    public function getRelatedEvents(int $categoryId, int $excludeId, int $limit = 3): array
+    {
+        $results = DB::table($this->table)
+            ->where('categorie_id', $categoryId)
+            ->where('id', '!=', $excludeId)
+            ->orderBy('date', 'desc')
+            ->limit($limit)
             ->get();
 
         return $this->mapToEntities($results);

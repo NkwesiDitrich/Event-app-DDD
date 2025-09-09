@@ -44,7 +44,7 @@ class HomeController extends Controller
         
         // Get related events using DDD repository
         $relatedEvents = $this->eventRepository->getRelatedEvents(
-            $post->categorie_id, 
+            $post->getCategoryId(), 
             $id, 
             3
         );

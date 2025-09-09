@@ -41,4 +41,9 @@ interface EventRepositoryInterface
     public function findAll(): array;
     public function findWithPagination(int $page = 1, int $perPage = 10): array;
     public function findUserEventsWithPagination(int $userId, int $page = 1, int $perPage = 10): array;
+
+    public function getEventsByType(string $type, int $limit = null): array;
+    public function getEventsByTypeWithPagination(string $type, int $perPage = 10, int $page = 1): array;
+    public function findByIdWithRelations(int $id): ?Event;
+    public function getRelatedEvents(int $categoryId, int $excludeId, int $limit = 3): array;
 }
