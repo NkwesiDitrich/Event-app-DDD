@@ -11,4 +11,4 @@ Route::get('/post/{id}',[HomeController::class,'PostPage']);
 
 Route::post('/event-registration',[HomeController::class,'EventRegistration']);
   
-
+require_once __DIR__ . '/ddd_api.php';
