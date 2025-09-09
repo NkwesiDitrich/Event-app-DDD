@@ -10,13 +10,29 @@ class EventDate
 {
     private DateTime $value;
 
-    public function __construct(string $date, ?string $timezone = null)
+    public function __construct(string $date, ?string $timezone = null, bool $allowPastDates = false)
     {
-        $this->validate($date);
+        $this->validate($date, $allowPastDates);
         $this->value = $this->createDateTime($date, $timezone);
     }
 
-    private function validate(string $date): void
+    /**
+     * Create EventDate for new events (enforces future dates)
+     */
+    public static function forNewEvent(string $date, ?string $timezone = null): self
+    {
+        return new self($date, $timezone, false);
+    }
+
+    /**
+     * Create EventDate from database (allows past dates)
+     */
+    public static function fromDatabase(string $date, ?string $timezone = null): self
+    {
+        return new self($date, $timezone, true);
+    }
+
+    private function validate(string $date, bool $allowPastDates = false): void
     {
         // Check if date format is valid (Y-m-d)
         $dateTime = DateTime::createFromFormat('Y-m-d', $date);
@@ -25,16 +41,19 @@ class EventDate
             throw new InvalidArgumentException('Invalid date format. Expected format: YYYY-MM-DD (e.g., 2025-12-31)');
         }
 
-        // Business rule: Event date cannot be in the past
-        $today = new DateTime('today');
-        if ($dateTime < $today) {
-            throw new InvalidArgumentException('Event date cannot be in the past. Please select a future date.');
-        }
+        // Only enforce future date rule for new events
+        if (!$allowPastDates) {
+            // Business rule: Event date cannot be in the past (only for new events)
+            $today = new DateTime('today');
+            if ($dateTime < $today) {
+                throw new InvalidArgumentException('Event date cannot be in the past. Please select a future date.');
+            }
 
-        // Business rule: Event cannot be scheduled more than 2 years in advance
-        $maxFutureDate = new DateTime('+2 years');
-        if ($dateTime > $maxFutureDate) {
-            throw new InvalidArgumentException('Event cannot be scheduled more than 2 years in advance');
+            // Business rule: Event cannot be scheduled more than 2 years in advance
+            $maxFutureDate = new DateTime('+2 years');
+            if ($dateTime > $maxFutureDate) {
+                throw new InvalidArgumentException('Event cannot be scheduled more than 2 years in advance');
+            }
         }
     }
 
@@ -106,6 +125,11 @@ class EventDate
     public function isUpcoming(): bool
     {
         return $this->value > new DateTime();
+    }
+
+    public function isPast(): bool
+    {
+        return $this->value < new DateTime('today');
     }
 
     public function equals(EventDate $other): bool
