@@ -16,14 +16,27 @@ class HomeController extends Controller
     }
 
     public function PostPage($id){
-
-        $post=Event::find($id);
-        $raletedEvents = Event::where('type','Recent')->where('categorie_id',$post->categorie_id)->inRandomOrder()->take(3)->get();
+        // Load event with user and category relationships for detailed display
+        $post = Event::with(['user', 'category'])->find($id);
+        
+        if (!$post) {
+            abort(404, 'Event not found');
+        }
+        
+        $raletedEvents = Event::where('type','Recent')
+            ->where('categorie_id', $post->categorie_id)
+            ->where('id', '!=', $id) // Exclude current event
+            ->with(['user', 'category']) // Load relationships for related events too
+            ->inRandomOrder()
+            ->take(3)
+            ->get();
+            
         return view('frontend.pages.post-page',compact('post','raletedEvents'));
     }
+    
     function EventRegistration (Request $request){
        Registration::create([
-            'date'=>now()->toDateString(),
+            'date'=>now()->toDateString(), // Add current date
             'name'=>$request->input('name'),
             'mobile'=>$request->input('mobile'),
             'email'=>$request->input('email'),
@@ -32,6 +45,6 @@ class HomeController extends Controller
             'user_id'=>$request->input('user_id')
         ]);
 
-        return redirect()->back()->with('success', 'Your Registration Confirm'); 
+        return redirect()->back()->with('success', 'Your Registration Confirmed Successfully!'); 
     }
 }

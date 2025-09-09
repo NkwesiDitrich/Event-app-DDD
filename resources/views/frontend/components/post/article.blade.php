@@ -4,21 +4,22 @@
 	<div class="row">
 
 		<!-- Begin Post -->
-		<div class="col-md-8 col-md-offset-2 col-xs-12">
+		<div class="col-md-10 col-md-offset-1 col-xs-12">
 			<div class="mainheading">
 
 				<!-- Begin Top Meta -->
 				<div class="row post-top-meta">
 					<div class="col-md-2">
-						<a href="#"><img class="author-thumb" src="{{ asset('My_avatar.jpeg') }}" alt="Sal"></a>
+						<a href="#"><img class="author-thumb" src="https://www.gravatar.com/avatar/e56154546cf4be74e393c62d1ae9f9d4?s=250&amp;d=mm&amp;r=x" alt="Organizer"></a>
 					</div>
 					<div class="col-md-10">
-						<a class="link-dark" href="#">{{ $post->user->firstName }} {{ $post->user->LastName }}</a><a href="#" class="btn follow">Follow</a>
-						<span class="author-description">Elite Author</span>
-						<span class="post-date">{{ date('d F Y',strtotime($post->date)) }}</span><span class="dot"></span><span class="post-read">6 min read</span>
+						<a class="link-dark" href="#">{{ $post->user->firstName }} {{ $post->user->lastName }}</a>
+						<span class="author-description">Event Organizer</span>
+						<span class="post-date">Published: {{ date('d F Y',strtotime($post->created_at)) }}</span>
 					</div>
 				</div>
-				<!-- End Top Menta -->
+				<!-- End Top Meta -->
+				
 				@if (\Session::has('success'))
 					<div class="alert alert-success">
 						<ul>
@@ -26,37 +27,85 @@
 						</ul>
 					</div>
 				@endif
-				<h1 class="posttitle">{{ $post->user->title }}</h1>
+				
+				<h1 class="posttitle">{{ $post->title }}</h1>
 
 			</div>
 
 			<!-- Begin Featured Image -->
-			<img class="featured-image img-fluid" src="{{ asset($post->image) }}" alt="">
+			<img class="featured-image img-fluid" src="{{ asset($post->image) }}" alt="{{ $post->title }}">
 			<!-- End Featured Image -->
+
+			<!-- Begin Event Details Section -->
+			<div class="event-details-section" style="background: #f8f9fa; padding: 30px; margin: 30px 0; border-radius: 8px; border-left: 4px solid #007bff;">
+				<h3 style="color: #007bff; margin-bottom: 25px; font-size: 24px;">
+					<i class="fa fa-calendar-alt" style="margin-right: 10px;"></i>Event Details
+				</h3>
+				
+				<div class="row">
+					<div class="col-md-6">
+						<div class="detail-item" style="margin-bottom: 20px;">
+							<h5 style="color: #333; margin-bottom: 8px;">
+								<i class="fa fa-calendar" style="color: #007bff; margin-right: 8px;"></i>Date
+							</h5>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ date('l, F j, Y', strtotime($post->date)) }}</p>
+						</div>
+						
+						@if($post->time)
+						<div class="detail-item" style="margin-bottom: 20px;">
+							<h5 style="color: #333; margin-bottom: 8px;">
+								<i class="fa fa-clock" style="color: #007bff; margin-right: 8px;"></i>Time
+							</h5>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->time }}</p>
+						</div>
+						@endif
+						
+						<div class="detail-item" style="margin-bottom: 20px;">
+							<h5 style="color: #333; margin-bottom: 8px;">
+								<i class="fa fa-map-marker-alt" style="color: #007bff; margin-right: 8px;"></i>Location
+							</h5>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->location }}</p>
+						</div>
+					</div>
+					
+					<div class="col-md-6">
+						<div class="detail-item" style="margin-bottom: 20px;">
+							<h5 style="color: #333; margin-bottom: 8px;">
+								<i class="fa fa-tag" style="color: #007bff; margin-right: 8px;"></i>Category
+							</h5>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->category->name ?? 'General' }}</p>
+						</div>
+						
+						<div class="detail-item" style="margin-bottom: 20px;">
+							<h5 style="color: #333; margin-bottom: 8px;">
+								<i class="fa fa-user" style="color: #007bff; margin-right: 8px;"></i>Organized By
+							</h5>
+							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->user->firstName }} {{ $post->user->lastName }}</p>
+						</div>
+						
+						<div class="detail-item" style="margin-bottom: 20px;">
+							<h5 style="color: #333; margin-bottom: 8px;">
+								<i class="fa fa-info-circle" style="color: #007bff; margin-right: 8px;"></i>Event Type
+							</h5>
+							<p style="font-size: 16px; margin: 0; color: #666;">
+								<span class="badge" style="background: {{ $post->type == 'Feature' ? '#28a745' : '#17a2b8' }}; color: white; padding: 5px 10px; border-radius: 15px;">
+									{{ $post->type }} Event
+								</span>
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End Event Details Section -->
 
 			<!-- Begin Post Content -->
 			<div class="article-post">
-				<p>
+				<h3 style="color: #333; margin-bottom: 20px;">About This Event</h3>
+				<p style="font-size: 16px; line-height: 1.6; color: #555;">
 					{{ $post->description }}
 				</p>
-				
-				{{-- <blockquote>
-					Gen-z strategy long tail churn rate seed money channels user experience incubator startup partner network low hanging fruit direct mailing. Client backing success startup assets responsive web design burn rate A/B testing metrics first mover advantage conversion.
-				</blockquote> --}}
-				
 			</div>
 			<!-- End Post Content -->
-
-			<!-- Begin Tags -->
-			<div class="after-post-tags">
-				<ul class="tags">
-					<li><a href="#">Design</a></li>
-					<li><a href="#">Growth Mindset</a></li>
-					<li><a href="#">Productivity</a></li>
-					<li><a href="#">Personal Growth</a></li>
-				</ul>
-			</div>
-			<!-- End Tags -->
 
 		</div>
 		<!-- End Post -->
@@ -65,4 +114,34 @@
 </div>
 <!-- End Article
 ================================================== -->
-<div class="hideshare"></div>
+
+<!-- Add Font Awesome for icons if not already included -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<style>
+.event-details-section .detail-item h5 {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+.registration-section:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0,123,255,0.3);
+}
+
+.tags li a {
+    background: #f8f9fa;
+    color: #007bff;
+    border: 1px solid #dee2e6;
+    text-transform: capitalize;
+}
+
+.tags li a:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+</style>
