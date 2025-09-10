@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -36,80 +35,28 @@ class UserController extends Controller
         return view('backend.pages.dashboard.profile-page');
     }
 
-    /**
-     * LIGHTNING FAST: User Registration with Optimized Validation
-     * Maintains all validation features but with maximum speed
-     */
+
+
     function UserRegistration(Request $request){
         try {
-            // SPEED OPTIMIZATION: Fast inline validation
-            $firstName = trim($request->input('firstName'));
-            $lastName = trim($request->input('lastName'));
-            $email = strtolower(trim($request->input('email')));
-            $mobile = trim($request->input('mobile'));
-            $password = $request->input('password');
-
-            // FAST VALIDATION: Quick checks with immediate return
-            if (empty($firstName)) {
-                return response()->json(['status' => 'failed', 'message' => 'First name is required'], 422);
-            }
-            if (empty($lastName)) {
-                return response()->json(['status' => 'failed', 'message' => 'Last name is required'], 422);
-            }
-            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                return response()->json(['status' => 'failed', 'message' => 'Please enter a valid email address'], 422);
-            }
-            if (empty($mobile)) {
-                return response()->json(['status' => 'failed', 'message' => 'Mobile number is required'], 422);
-            }
-            if (empty($password) || strlen($password) < 6) {
-                return response()->json(['status' => 'failed', 'message' => 'Password must be at least 6 characters long'], 422);
-            }
-
-            // SUPER FAST DUPLICATE CHECK: Single query for both email and mobile
-            $existing = DB::table('users')
-                ->select('email', 'mobile')
-                ->where('email', $email)
-                ->orWhere('mobile', $mobile)
-                ->first();
-
-            if ($existing) {
-                if ($existing->email === $email) {
-                    return response()->json([
-                        'status' => 'failed',
-                        'message' => 'This email address is already registered. Please use a different email or try logging in.'
-                    ], 422);
-                }
-                if ($existing->mobile === $mobile) {
-                    return response()->json([
-                        'status' => 'failed',
-                        'message' => 'This mobile number is already registered. Please use a different mobile number.'
-                    ], 422);
-                }
-            }
-
-            // FAST INSERT: Direct database insert for maximum speed
-            $userId = DB::table('users')->insertGetId([
-                'firstName' => $firstName,
-                'lastName' => $lastName,
-                'email' => $email,
-                'mobile' => $mobile,
-                'password' => Hash::make($password),
-                'otp' => '0',
-                'created_at' => now(),
-                'updated_at' => now()
+            User::create([
+                'firstName' => $request->input('firstName'),
+                'lastName' => $request->input('lastName'),
+                'email' => $request->input('email'),
+                'mobile' => $request->input('mobile'),
+                'password' => Hash::make($request->input('password')),
             ]);
-
             return response()->json([
                 'status' => 'success',
-                'message' => 'User Registration Successfully! You can now login with your credentials.'
-            ], 201);
+                'message' => 'User Registration Successfully'
+            ],200);
 
         } catch (Exception $e) {
             return response()->json([
                 'status' => 'failed',
-                'message' => 'Registration failed due to a server error. Please try again later.'
-            ], 500);
+                'message' => 'User Registration Failed'
+            ],200);
+
         }
     }
 
@@ -242,118 +189,29 @@ class UserController extends Controller
         ],200);
     }
 
-    /**
-     * ULTRA FAST: Profile Update - Eliminates Password Hashing Bottleneck
-     * Password hashing can take 2-5 seconds - this version makes it optional and super fast
-     */
     function UpdateProfile(Request $request){
         try{
-            // SPEED OPTIMIZATION: Get user ID immediately
-            $user_id = auth()->id();
-            
-            if (!$user_id) {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'User not authenticated. Please login again.',
-                ], 401);
-            }
-
-            // ULTRA FAST VALIDATION: Quick inline validation
-            $firstName = trim($request->input('firstName'));
-            $lastName = trim($request->input('lastName'));
-            $mobile = trim($request->input('mobile'));
-            $password = $request->input('password');
-
-            if (empty($firstName)) {
-                return response()->json(['status' => 'failed', 'message' => 'First name is required'], 422);
-            }
-            if (empty($lastName)) {
-                return response()->json(['status' => 'failed', 'message' => 'Last name is required'], 422);
-            }
-            if (empty($mobile)) {
-                return response()->json(['status' => 'failed', 'message' => 'Mobile number is required'], 422);
-            }
-
-            // CRITICAL SPEED FIX: Make password update optional to avoid hashing bottleneck
-            $updateData = [
-                'firstName' => $firstName,
-                'lastName' => $lastName,
-                'mobile' => $mobile,
-                'updated_at' => now()
-            ];
-
-            // OPTIONAL PASSWORD UPDATE: Only hash and update password if it's provided and not empty
-            if (!empty($password) && strlen($password) >= 6) {
-                // SPEED OPTIMIZATION: Only check mobile duplicates if we're actually updating
-                $existingMobile = DB::table('users')
-                    ->where('mobile', $mobile)
-                    ->where('id', '!=', $user_id)
-                    ->exists();
-                
-                if ($existingMobile) {
-                    return response()->json([
-                        'status' => 'failed',
-                        'message' => 'This mobile number is already used by another user. Please use a different mobile number.'
-                    ], 422);
-                }
-
-                // Add password to update data only if provided
-                $updateData['password'] = Hash::make($password);
-                
-                // LIGHTNING FAST UPDATE: Direct database update with password
-                $updated = DB::table('users')
-                    ->where('id', $user_id)
-                    ->update($updateData);
-                    
-                if ($updated) {
-                    return response()->json([
-                        'status' => 'success',
-                        'message' => 'Profile and password updated successfully!',
-                    ], 200);
-                }
-            } else {
-                // ULTRA FAST UPDATE: Update without password (no hashing needed)
-                // Still check mobile duplicates for data integrity
-                $existingMobile = DB::table('users')
-                    ->where('mobile', $mobile)
-                    ->where('id', '!=', $user_id)
-                    ->exists();
-                
-                if ($existingMobile) {
-                    return response()->json([
-                        'status' => 'failed',
-                        'message' => 'This mobile number is already used by another user. Please use a different mobile number.'
-                    ], 422);
-                }
-
-                // INSTANT UPDATE: No password hashing = instant response
-                $updated = DB::table('users')
-                    ->where('id', $user_id)
-                    ->update($updateData);
-                    
-                if ($updated) {
-                    return response()->json([
-                        'status' => 'success',
-                        'message' => 'Profile updated successfully! (Password unchanged)',
-                    ], 200);
-                } else {
-                    return response()->json([
-                        'status' => 'success',
-                        'message' => 'No changes detected. Profile is already up to date.',
-                    ], 200);
-                }
-            }
-
+            $email=$request->header('email');
+            $firstName=$request->input('firstName');
+            $lastName=$request->input('lastName');
+            $mobile=$request->input('mobile');
+            $password=Hash::make($request->input('password'));
+            User::where('email','=',$email)->update([
+                'firstName'=>$firstName,
+                'lastName'=>$lastName,
+                'mobile'=>$mobile,
+                'password'=>$password
+            ]);
             return response()->json([
-                'status' => 'failed',
-                'message' => 'Failed to update profile. Please try again.',
-            ], 500);
+                'status' => 'success',
+                'message' => 'Request Successful',
+            ],200);
 
         }catch (Exception $exception){
             return response()->json([
-                'status' => 'failed',
-                'message' => 'Profile update failed due to a server error. Please try again later.',
-            ], 500);
+                'status' => 'fail',
+                'message' => 'Something Went Wrong',
+            ],200);
         }
     }
 
