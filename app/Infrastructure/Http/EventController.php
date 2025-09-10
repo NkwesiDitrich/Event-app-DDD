@@ -13,10 +13,12 @@ use App\Application\Handlers\DeleteEventHandler;
 use App\Application\Handlers\GetEventHandler;
 use App\Application\Handlers\GetUserEventsHandler;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 
 class EventController extends Controller
@@ -50,20 +52,36 @@ class EventController extends Controller
     }
 
     /**
-     * API method to create a new event
+     * API method to create a new event - OPTIMIZED FOR FAST RESPONSE
      */
     public function EventCreate(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->id ?? 1;
 
-            // Handle file upload
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('events', 'public');
+            // Fast validation without Laravel's validator overhead
+            $requiredFields = ['title', 'description', 'date', 'time', 'location', 'type', 'categorie_id'];
+            foreach ($requiredFields as $field) {
+                if (empty($request->input($field))) {
+                    return response()->json(['error' => ucfirst($field) . ' is required'], 422);
+                }
             }
 
-            // Direct database insert for better performance
+            // Handle file upload efficiently
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                
+                // Quick file validation
+                if (!in_array($file->getClientOriginalExtension(), ['jpg', 'jpeg', 'png'])) {
+                    return response()->json(['error' => 'Only JPG, JPEG, PNG files are allowed'], 422);
+                }
+                
+                // Store file with optimized path
+                $imagePath = $file->store('events', 'public');
+            }
+
+            // Direct database insert for maximum performance
             $eventId = DB::table('events')->insertGetId([
                 'title' => $request->input('title'),
                 'description' => $request->input('description'),
@@ -78,10 +96,13 @@ class EventController extends Controller
                 'updated_at' => now()
             ]);
 
-            return response()->json(1); // Frontend expects simple 1 for success
+            // Return 201 status as expected by frontend
+            return response()->json(['success' => true, 'id' => $eventId], 201);
 
         } catch (\Exception $e) {
-            return response()->json(0); // Frontend expects 0 for failure
+            // Log error for debugging but return simple error response
+            Log::error('Event creation failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Event creation failed'], 500);
         }
     }
 
