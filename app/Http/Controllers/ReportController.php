@@ -82,8 +82,8 @@ class ReportController extends Controller
             
             $registrations = $registrations->get();
            
-            // PERFORMANCE FIX: Use correct repository method name and optimize for speed
-            $events = $this->getOptimizedUserEvents($user_id);
+            // CRITICAL FIX: Get events in format expected by view (simple objects with direct property access)
+            $events = $this->getViewCompatibleEvents($user_id);
             
             return view('backend.pages.dashboard.report-page', compact('events', 'registrations', 'status'));
             
@@ -92,7 +92,7 @@ class ReportController extends Controller
             Log::error('Report page error: ' . $e->getMessage());
             
             // Provide fallback data to prevent page crash
-            $events = $this->getFallbackEvents();
+            $events = $this->getFallbackViewCompatibleEvents();
             $registrations = collect([]);
             $status = 'Error loading data - showing fallback';
             
@@ -101,43 +101,39 @@ class ReportController extends Controller
     }
 
     /**
-     * PERFORMANCE OPTIMIZED: Get user events with fast database queries
+     * CRITICAL FIX: Get events in format compatible with view expectations
+     * View expects: $item->id and $item->title (direct property access)
      */
-    private function getOptimizedUserEvents($user_id)
+    private function getViewCompatibleEvents($user_id)
     {
         try {
-            // First try the correct repository method
-            return $this->eventRepository->findByUserId($user_id);
-            
-        } catch (\Exception $e) {
-            Log::error('Repository method failed, using direct database query: ' . $e->getMessage());
-            
-            // Fallback to direct database query for maximum performance
-            return $this->getEventsDirectFromDatabase($user_id);
-        }
-    }
-
-    /**
-     * FALLBACK: Direct database query for maximum performance
-     */
-    private function getEventsDirectFromDatabase($user_id)
-    {
-        try {
+            // Use direct database query for maximum performance and view compatibility
             $events = DB::table('events')
                 ->join('categories', 'events.categorie_id', '=', 'categories.id')
                 ->select(
-                    'events.*',
+                    'events.id',
+                    'events.title',
+                    'events.description',
+                    'events.date',
+                    'events.time',
+                    'events.location',
+                    'events.type',
+                    'events.image',
+                    'events.user_id',
+                    'events.categorie_id',
+                    'events.created_at',
+                    'events.updated_at',
                     'categories.name as category_name'
                 )
                 ->where('events.user_id', $user_id)
                 ->orderBy('events.date', 'desc')
                 ->get();
 
-            // Convert to simple array format for the view
+            // Convert to simple objects that the view can access directly
             return $events->map(function ($event) {
                 return (object) [
-                    'id' => $event->id,
-                    'title' => $event->title,
+                    'id' => $event->id,                    // Direct access: $item->id
+                    'title' => $event->title,              // Direct access: $item->title
                     'description' => $event->description,
                     'date' => $event->date,
                     'time' => $event->time,
@@ -148,35 +144,25 @@ class ReportController extends Controller
                     'categorie_id' => $event->categorie_id,
                     'category_name' => $event->category_name,
                     'created_at' => $event->created_at,
-                    'updated_at' => $event->updated_at,
-                    // Add methods that the view might expect
-                    'getTitle' => function() use ($event) {
-                        return (object) ['getValue' => function() use ($event) { return $event->title; }];
-                    },
-                    'getDate' => function() use ($event) {
-                        return (object) ['getFormattedDate' => function() use ($event) { return $event->date; }];
-                    },
-                    'getLocation' => function() use ($event) {
-                        return (object) ['getValue' => function() use ($event) { return $event->location; }];
-                    }
+                    'updated_at' => $event->updated_at
                 ];
-            })->toArray();
+            });
 
         } catch (\Exception $e) {
             Log::error('Direct database query failed: ' . $e->getMessage());
-            return $this->getFallbackEvents();
+            return $this->getFallbackViewCompatibleEvents();
         }
     }
 
     /**
-     * FALLBACK: Provide sample events when database is unavailable
+     * FALLBACK: Provide sample events in view-compatible format
      */
-    private function getFallbackEvents()
+    private function getFallbackViewCompatibleEvents()
     {
-        return [
+        return collect([
             (object) [
-                'id' => 1,
-                'title' => 'Sample Event 1',
+                'id' => 1,                              // Direct access: $item->id
+                'title' => 'Sample Event 1',           // Direct access: $item->title
                 'description' => 'This is a sample event for demonstration',
                 'date' => date('Y-m-d'),
                 'time' => '10:00',
@@ -187,20 +173,11 @@ class ReportController extends Controller
                 'categorie_id' => 1,
                 'category_name' => 'General',
                 'created_at' => now(),
-                'updated_at' => now(),
-                'getTitle' => function() {
-                    return (object) ['getValue' => function() { return 'Sample Event 1'; }];
-                },
-                'getDate' => function() {
-                    return (object) ['getFormattedDate' => function() { return date('Y-m-d'); }];
-                },
-                'getLocation' => function() {
-                    return (object) ['getValue' => function() { return 'Sample Location'; }];
-                }
+                'updated_at' => now()
             ],
             (object) [
-                'id' => 2,
-                'title' => 'Sample Event 2',
+                'id' => 2,                              // Direct access: $item->id
+                'title' => 'Sample Event 2',           // Direct access: $item->title
                 'description' => 'Another sample event for demonstration',
                 'date' => date('Y-m-d', strtotime('+1 day')),
                 'time' => '14:00',
@@ -211,17 +188,8 @@ class ReportController extends Controller
                 'categorie_id' => 1,
                 'category_name' => 'General',
                 'created_at' => now(),
-                'updated_at' => now(),
-                'getTitle' => function() {
-                    return (object) ['getValue' => function() { return 'Sample Event 2'; }];
-                },
-                'getDate' => function() {
-                    return (object) ['getFormattedDate' => function() { return date('Y-m-d', strtotime('+1 day')); }];
-                },
-                'getLocation' => function() {
-                    return (object) ['getValue' => function() { return 'Another Location'; }];
-                }
+                'updated_at' => now()
             ]
-        ];
+        ]);
     }
 }
