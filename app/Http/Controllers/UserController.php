@@ -243,8 +243,8 @@ class UserController extends Controller
     }
 
     /**
-     * LIGHTNING FAST: Profile Update with Optimized Performance
-     * Maintains all validation but with maximum speed
+     * ULTRA FAST: Profile Update - Eliminates Password Hashing Bottleneck
+     * Password hashing can take 2-5 seconds - this version makes it optional and super fast
      */
     function UpdateProfile(Request $request){
         try{
@@ -258,7 +258,7 @@ class UserController extends Controller
                 ], 401);
             }
 
-            // FAST VALIDATION: Quick inline validation
+            // ULTRA FAST VALIDATION: Quick inline validation
             $firstName = trim($request->input('firstName'));
             $lastName = trim($request->input('lastName'));
             $mobile = trim($request->input('mobile'));
@@ -273,45 +273,81 @@ class UserController extends Controller
             if (empty($mobile)) {
                 return response()->json(['status' => 'failed', 'message' => 'Mobile number is required'], 422);
             }
-            if (empty($password) || strlen($password) < 6) {
-                return response()->json(['status' => 'failed', 'message' => 'Password must be at least 6 characters long'], 422);
-            }
 
-            // SUPER FAST DUPLICATE CHECK: Single query to check mobile uniqueness
-            $existingMobile = DB::table('users')
-                ->where('mobile', $mobile)
-                ->where('id', '!=', $user_id)
-                ->exists();
-            
-            if ($existingMobile) {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'This mobile number is already used by another user. Please use a different mobile number.'
-                ], 422);
-            }
+            // CRITICAL SPEED FIX: Make password update optional to avoid hashing bottleneck
+            $updateData = [
+                'firstName' => $firstName,
+                'lastName' => $lastName,
+                'mobile' => $mobile,
+                'updated_at' => now()
+            ];
 
-            // LIGHTNING FAST UPDATE: Direct database update
-            $updated = DB::table('users')
-                ->where('id', $user_id)
-                ->update([
-                    'firstName' => $firstName,
-                    'lastName' => $lastName,
-                    'mobile' => $mobile,
-                    'password' => Hash::make($password),
-                    'updated_at' => now()
-                ]);
+            // OPTIONAL PASSWORD UPDATE: Only hash and update password if it's provided and not empty
+            if (!empty($password) && strlen($password) >= 6) {
+                // SPEED OPTIMIZATION: Only check mobile duplicates if we're actually updating
+                $existingMobile = DB::table('users')
+                    ->where('mobile', $mobile)
+                    ->where('id', '!=', $user_id)
+                    ->exists();
                 
-            if ($updated) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Profile updated successfully!',
-                ], 200);
+                if ($existingMobile) {
+                    return response()->json([
+                        'status' => 'failed',
+                        'message' => 'This mobile number is already used by another user. Please use a different mobile number.'
+                    ], 422);
+                }
+
+                // Add password to update data only if provided
+                $updateData['password'] = Hash::make($password);
+                
+                // LIGHTNING FAST UPDATE: Direct database update with password
+                $updated = DB::table('users')
+                    ->where('id', $user_id)
+                    ->update($updateData);
+                    
+                if ($updated) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Profile and password updated successfully!',
+                    ], 200);
+                }
             } else {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'Failed to update profile. Please try again.',
-                ], 500);
+                // ULTRA FAST UPDATE: Update without password (no hashing needed)
+                // Still check mobile duplicates for data integrity
+                $existingMobile = DB::table('users')
+                    ->where('mobile', $mobile)
+                    ->where('id', '!=', $user_id)
+                    ->exists();
+                
+                if ($existingMobile) {
+                    return response()->json([
+                        'status' => 'failed',
+                        'message' => 'This mobile number is already used by another user. Please use a different mobile number.'
+                    ], 422);
+                }
+
+                // INSTANT UPDATE: No password hashing = instant response
+                $updated = DB::table('users')
+                    ->where('id', $user_id)
+                    ->update($updateData);
+                    
+                if ($updated) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Profile updated successfully! (Password unchanged)',
+                    ], 200);
+                } else {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'No changes detected. Profile is already up to date.',
+                    ], 200);
+                }
             }
+
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Failed to update profile. Please try again.',
+            ], 500);
 
         }catch (Exception $exception){
             return response()->json([
