@@ -4,7 +4,7 @@
         <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
-            <h4 class="modal-title">Join this Event: {{ $post->title }}</h4>
+            <h4 class="modal-title">Join this Event: {{ $post->getTitle()->getValue() }}</h4>
             </div>
             <div class="modal-body">
                 <form action="{{ url('/event-registration') }}" method="POST">
@@ -12,8 +12,8 @@
                     <div class="form-group col-md-12">
                         <label class="form-label" for="name">Name * </label>
                         <input type="text" id="name" name="name" class="form-control" placeholder="Name"/>
-                        <input type="hidden" id="event_id" name="event_id" value="{{ $post->id }}"/>
-                        <input type="hidden" id="user_id" name="user_id" value="{{ $post->user_id }}"/>
+                        <input type="hidden" id="event_id" name="event_id" value="{{ $post->getId() }}"/>
+                        <input type="hidden" id="user_id" name="user_id" value="{{ $post->getUserId() }}"/>
                         <label class="form-label" for="mobile">Mobile</label>
                         <input type="text" id="mobile" name="mobile" class="form-control" placeholder="Mobile" />
                         <label class="form-label" for="email">Email address</label>
