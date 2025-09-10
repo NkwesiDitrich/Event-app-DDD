@@ -39,65 +39,19 @@ class EventController extends Controller
         $this->getUserEventsHandler = $getUserEventsHandler;
     }
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Display the event management page
+     * This method was missing and causing the BadMethodCallException
+     */
+    public function EventPage()
     {
-        try {
-            $userId = $request->user()->id ?? 1; // Get from authenticated user
-            $type = $request->get('type');
-            $page = (int) $request->get('page', 1);
-            $perPage = (int) $request->get('per_page', 10);
-
-            $query = new GetUserEventsQuery($userId, $type, $page, $perPage);
-            $events = $this->getUserEventsHandler->handle($query);
-
-            return response()->json([
-                'success' => true,
-                'data' => array_map(fn($event) => $this->eventToArray($event), $events),
-                'pagination' => [
-                    'page' => $page,
-                    'per_page' => $perPage,
-                    'total' => count($events)
-                ]
-            ]);
-
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 400);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred'
-            ], 500);
-        }
+        return view('backend.pages.dashboard.event-page');
     }
 
-    public function show(int $id): JsonResponse
-    {
-        try {
-            $query = new GetEventQuery($id);
-            $event = $this->getEventHandler->handle($query);
-
-            return response()->json([
-                'success' => true,
-                'data' => $this->eventToArray($event)
-            ]);
-
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred'
-            ], 500);
-        }
-    }
-
-    public function store(Request $request): JsonResponse
+    /**
+     * API method to create a new event
+     */
+    public function EventCreate(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->id ?? 1; // Get from authenticated user
@@ -135,13 +89,54 @@ class EventController extends Controller
         }
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    /**
+     * API method to list events
+     */
+    public function EventList(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->id ?? 1; // Get from authenticated user
+            $type = $request->get('type');
+            $page = (int) $request->get('page', 1);
+            $perPage = (int) $request->get('per_page', 10);
+
+            $query = new GetUserEventsQuery($userId, $type, $page, $perPage);
+            $events = $this->getUserEventsHandler->handle($query);
+
+            return response()->json([
+                'success' => true,
+                'data' => array_map(fn($event) => $this->eventToArray($event), $events),
+                'pagination' => [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total' => count($events)
+                ]
+            ]);
+
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * API method to update an event
+     */
+    public function EventUpdate(Request $request): JsonResponse
+    {
+        try {
+            $userId = $request->user()->id ?? 1; // Get from authenticated user
+            $eventId = (int) $request->input('id');
 
             $command = new UpdateEventCommand(
-                $id,
+                $eventId,
                 $request->input('title'),
                 $request->input('description'),
                 $request->input('date'),
@@ -173,12 +168,16 @@ class EventController extends Controller
         }
     }
 
-    public function destroy(Request $request, int $id): JsonResponse
+    /**
+     * API method to delete an event
+     */
+    public function EventDelete(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->id ?? 1; // Get from authenticated user
+            $eventId = (int) $request->input('id');
 
-            $command = new DeleteEventCommand($id, $userId);
+            $command = new DeleteEventCommand($eventId, $userId);
             $deleted = $this->deleteEventHandler->handle($command);
 
             if ($deleted) {
@@ -204,6 +203,83 @@ class EventController extends Controller
                 'error' => 'An unexpected error occurred'
             ], 500);
         }
+    }
+
+    /**
+     * API method to get event by ID
+     */
+    public function EventByID(Request $request): JsonResponse
+    {
+        try {
+            $eventId = (int) $request->input('id');
+            $query = new GetEventQuery($eventId);
+            $event = $this->getEventHandler->handle($query);
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->eventToArray($event)
+            ]);
+
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    // Original DDD methods (keeping for API compatibility)
+    public function index(Request $request): JsonResponse
+    {
+        return $this->EventList($request);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $query = new GetEventQuery($id);
+            $event = $this->getEventHandler->handle($query);
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->eventToArray($event)
+            ]);
+
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        return $this->EventCreate($request);
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        // Set the ID in the request for consistency with EventUpdate method
+        $request->merge(['id' => $id]);
+        return $this->EventUpdate($request);
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        // Set the ID in the request for consistency with EventDelete method
+        $request->merge(['id' => $id]);
+        return $this->EventDelete($request);
     }
 
     // Additional DDD-specific endpoints
