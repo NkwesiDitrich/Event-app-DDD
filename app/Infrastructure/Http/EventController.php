@@ -15,6 +15,7 @@ use App\Application\Handlers\GetUserEventsHandler;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class EventController extends Controller
@@ -84,44 +85,69 @@ class EventController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'An unexpected error occurred'
+                'error' => 'An unexpected error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * API method to list events
+     * API method to list events - Fixed to return data in format expected by frontend
      */
     public function EventList(Request $request): JsonResponse
     {
         try {
-            $userId = $request->user()->id ?? 1; // Get from authenticated user
-            $type = $request->get('type');
-            $page = (int) $request->get('page', 1);
-            $perPage = (int) $request->get('per_page', 10);
+            // Use direct database query to get events with categories for faster loading
+            $userId = $request->user()->id ?? 1;
+            
+            $events = DB::table('events')
+                ->join('categories', 'events.categorie_id', '=', 'categories.id')
+                ->select(
+                    'events.id',
+                    'events.title',
+                    'events.description',
+                    'events.date',
+                    'events.time',
+                    'events.location',
+                    'events.type',
+                    'events.image',
+                    'events.user_id',
+                    'events.categorie_id',
+                    'events.created_at',
+                    'events.updated_at',
+                    'categories.name as category_name'
+                )
+                ->where('events.user_id', $userId)
+                ->orderBy('events.created_at', 'desc')
+                ->get();
 
-            $query = new GetUserEventsQuery($userId, $type, $page, $perPage);
-            $events = $this->getUserEventsHandler->handle($query);
+            // Transform data to match frontend expectations
+            $transformedEvents = $events->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'description' => $event->description,
+                    'date' => $event->date,
+                    'time' => $event->time,
+                    'location' => $event->location,
+                    'type' => $event->type,
+                    'image' => $event->image,
+                    'user_id' => $event->user_id,
+                    'categorie_id' => $event->categorie_id,
+                    'created_at' => $event->created_at,
+                    'updated_at' => $event->updated_at,
+                    'category' => [
+                        'name' => $event->category_name
+                    ]
+                ];
+            });
 
-            return response()->json([
-                'success' => true,
-                'data' => array_map(fn($event) => $this->eventToArray($event), $events),
-                'pagination' => [
-                    'page' => $page,
-                    'per_page' => $perPage,
-                    'total' => count($events)
-                ]
-            ]);
+            // Return direct array as expected by frontend
+            return response()->json($transformedEvents);
 
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 400);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'An unexpected error occurred'
+                'error' => 'An unexpected error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -163,7 +189,7 @@ class EventController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'An unexpected error occurred'
+                'error' => 'An unexpected error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -200,7 +226,7 @@ class EventController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'An unexpected error occurred'
+                'error' => 'An unexpected error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -212,23 +238,51 @@ class EventController extends Controller
     {
         try {
             $eventId = (int) $request->input('id');
-            $query = new GetEventQuery($eventId);
-            $event = $this->getEventHandler->handle($query);
+            
+            // Use direct database query for faster response
+            $event = DB::table('events')
+                ->join('categories', 'events.categorie_id', '=', 'categories.id')
+                ->select(
+                    'events.*',
+                    'categories.name as category_name'
+                )
+                ->where('events.id', $eventId)
+                ->first();
+
+            if (!$event) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Event not found'
+                ], 404);
+            }
+
+            $transformedEvent = [
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'date' => $event->date,
+                'time' => $event->time,
+                'location' => $event->location,
+                'type' => $event->type,
+                'image' => $event->image,
+                'user_id' => $event->user_id,
+                'categorie_id' => $event->categorie_id,
+                'created_at' => $event->created_at,
+                'updated_at' => $event->updated_at,
+                'category' => [
+                    'name' => $event->category_name
+                ]
+            ];
 
             return response()->json([
                 'success' => true,
-                'data' => $this->eventToArray($event)
+                'data' => $transformedEvent
             ]);
 
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'An unexpected error occurred'
+                'error' => 'An unexpected error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
