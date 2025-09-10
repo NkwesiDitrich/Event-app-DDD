@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
 class EventController extends Controller
@@ -42,7 +43,6 @@ class EventController extends Controller
 
     /**
      * Display the event management page
-     * This method was missing and causing the BadMethodCallException
      */
     public function EventPage()
     {
@@ -55,48 +55,42 @@ class EventController extends Controller
     public function EventCreate(Request $request): JsonResponse
     {
         try {
-            $userId = $request->user()->id ?? 1; // Get from authenticated user
+            $userId = $request->user()->id ?? 1;
 
-            $command = new CreateEventCommand(
-                $request->input('title'),
-                $request->input('description'),
-                $request->input('date'),
-                $request->input('time', ''),
-                $request->input('location'),
-                $request->input('type', 'Recent'),
-                $userId,
-                (int) $request->input('categorie_id'),
-                $request->input('image')
-            );
+            // Handle file upload
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('events', 'public');
+            }
 
-            $event = $this->createEventHandler->handle($command);
+            // Direct database insert for better performance
+            $eventId = DB::table('events')->insertGetId([
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'date' => $request->input('date'),
+                'time' => $request->input('time', ''),
+                'location' => $request->input('location'),
+                'type' => $request->input('type', 'Recent'),
+                'user_id' => $userId,
+                'categorie_id' => (int) $request->input('categorie_id'),
+                'image' => $imagePath,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Event created successfully',
-                'data' => $this->eventToArray($event)
-            ], 201);
+            return response()->json(1); // Frontend expects simple 1 for success
 
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 400);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+            return response()->json(0); // Frontend expects 0 for failure
         }
     }
 
     /**
-     * API method to list events - Fixed to return data in format expected by frontend
+     * API method to list events - Optimized for fast loading
      */
     public function EventList(Request $request): JsonResponse
     {
         try {
-            // Use direct database query to get events with categories for faster loading
             $userId = $request->user()->id ?? 1;
             
             $events = DB::table('events')
@@ -120,7 +114,6 @@ class EventController extends Controller
                 ->orderBy('events.created_at', 'desc')
                 ->get();
 
-            // Transform data to match frontend expectations
             $transformedEvents = $events->map(function ($event) {
                 return [
                     'id' => $event->id,
@@ -141,122 +134,110 @@ class EventController extends Controller
                 ];
             });
 
-            // Return direct array as expected by frontend
             return response()->json($transformedEvents);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+            return response()->json([]);
         }
     }
 
     /**
-     * API method to update an event
+     * API method to update an event - Optimized for fast response
      */
     public function EventUpdate(Request $request): JsonResponse
     {
         try {
-            $userId = $request->user()->id ?? 1; // Get from authenticated user
             $eventId = (int) $request->input('id');
+            $userId = $request->user()->id ?? 1;
 
-            $command = new UpdateEventCommand(
-                $eventId,
-                $request->input('title'),
-                $request->input('description'),
-                $request->input('date'),
-                $request->input('time', ''),
-                $request->input('location'),
-                $request->input('type', 'Recent'),
-                $userId,
-                $request->input('image')
-            );
+            // Get current event data
+            $currentEvent = DB::table('events')->where('id', $eventId)->where('user_id', $userId)->first();
+            
+            if (!$currentEvent) {
+                return response()->json(0);
+            }
 
-            $event = $this->updateEventHandler->handle($command);
+            $updateData = [
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'date' => $request->input('date'),
+                'time' => $request->input('time', ''),
+                'location' => $request->input('location'),
+                'type' => $request->input('type', 'Recent'),
+                'categorie_id' => (int) $request->input('categorie_id'),
+                'updated_at' => now()
+            ];
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Event updated successfully',
-                'data' => $this->eventToArray($event)
-            ]);
+            // Handle file upload
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($currentEvent->image && Storage::disk('public')->exists($currentEvent->image)) {
+                    Storage::disk('public')->delete($currentEvent->image);
+                }
+                
+                $updateData['image'] = $request->file('image')->store('events', 'public');
+            }
 
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 400);
+            // Direct database update for better performance
+            $updated = DB::table('events')
+                ->where('id', $eventId)
+                ->where('user_id', $userId)
+                ->update($updateData);
+
+            return response()->json($updated ? 1 : 0); // Frontend expects 1 for success, 0 for failure
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+            return response()->json(0);
         }
     }
 
     /**
-     * API method to delete an event
+     * API method to delete an event - Optimized for fast response
      */
     public function EventDelete(Request $request): JsonResponse
     {
         try {
-            $userId = $request->user()->id ?? 1; // Get from authenticated user
             $eventId = (int) $request->input('id');
+            $userId = $request->user()->id ?? 1;
+            $oldImage = $request->input('oldImage');
 
-            $command = new DeleteEventCommand($eventId, $userId);
-            $deleted = $this->deleteEventHandler->handle($command);
-
-            if ($deleted) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Event deleted successfully'
-                ]);
+            // Delete the image file if exists
+            if ($oldImage && Storage::disk('public')->exists($oldImage)) {
+                Storage::disk('public')->delete($oldImage);
             }
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to delete event'
-            ], 500);
+            // Direct database delete for better performance
+            $deleted = DB::table('events')
+                ->where('id', $eventId)
+                ->where('user_id', $userId)
+                ->delete();
 
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 400);
+            return response()->json($deleted ? 1 : 0); // Frontend expects 1 for success, 0 for failure
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+            return response()->json(0);
         }
     }
 
     /**
-     * API method to get event by ID
+     * API method to get event by ID - Optimized for fast response
      */
     public function EventByID(Request $request): JsonResponse
     {
         try {
             $eventId = (int) $request->input('id');
             
-            // Use direct database query for faster response
+            // Direct database query for fastest response
             $event = DB::table('events')
-                ->join('categories', 'events.categorie_id', '=', 'categories.id')
-                ->select(
-                    'events.*',
-                    'categories.name as category_name'
-                )
-                ->where('events.id', $eventId)
+                ->where('id', $eventId)
                 ->first();
 
             if (!$event) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Event not found'
-                ], 404);
+                return response()->json([]);
             }
 
-            $transformedEvent = [
+            // Return data in format expected by frontend (direct access to fields)
+            return response()->json([
                 'id' => $event->id,
                 'title' => $event->title,
                 'description' => $event->description,
@@ -268,22 +249,11 @@ class EventController extends Controller
                 'user_id' => $event->user_id,
                 'categorie_id' => $event->categorie_id,
                 'created_at' => $event->created_at,
-                'updated_at' => $event->updated_at,
-                'category' => [
-                    'name' => $event->category_name
-                ]
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformedEvent
+                'updated_at' => $event->updated_at
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+            return response()->json([]);
         }
     }
 
@@ -324,14 +294,12 @@ class EventController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        // Set the ID in the request for consistency with EventUpdate method
         $request->merge(['id' => $id]);
         return $this->EventUpdate($request);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        // Set the ID in the request for consistency with EventDelete method
         $request->merge(['id' => $id]);
         return $this->EventDelete($request);
     }
@@ -344,7 +312,6 @@ class EventController extends Controller
             $query = new GetUserEventsQuery($userId, null, 1, 50);
             $events = $this->getUserEventsHandler->handle($query);
 
-            // Filter upcoming events using domain logic
             $upcomingEvents = array_filter($events, fn($event) => $event->isUpcoming());
 
             return response()->json([
@@ -363,8 +330,7 @@ class EventController extends Controller
     public function featured(): JsonResponse
     {
         try {
-            // This would typically use a different query handler for public events
-            $userId = 1; // For demo purposes
+            $userId = 1;
             $query = new GetUserEventsQuery($userId, 'Feature', 1, 10);
             $events = $this->getUserEventsHandler->handle($query);
 
@@ -384,11 +350,10 @@ class EventController extends Controller
     public function today(): JsonResponse
     {
         try {
-            $userId = 1; // For demo purposes
+            $userId = 1;
             $query = new GetUserEventsQuery($userId, null, 1, 50);
             $events = $this->getUserEventsHandler->handle($query);
 
-            // Filter today's events using domain logic
             $todaysEvents = array_filter($events, fn($event) => $event->isToday());
 
             return response()->json([
@@ -423,7 +388,6 @@ class EventController extends Controller
             'category_id' => $event->getCategoryId(),
             'created_at' => $event->getCreatedAt()->format('Y-m-d H:i:s'),
             'updated_at' => $event->getUpdatedAt()->format('Y-m-d H:i:s'),
-            // Rich domain information
             'is_upcoming' => $event->isUpcoming(),
             'is_past' => $event->isPast(),
             'is_featured' => $event->isFeatured(),
