@@ -78,7 +78,9 @@ class EventController extends Controller
                 }
                 
                 // Store file with optimized path
-                $imagePath = $file->store('events', 'public');
+                $img_name = $file->hashName();
+                $file->move(public_path('uploads'), $img_name);
+                $imagePath = 'uploads/' . $img_name;
             }
 
             // Direct database insert for maximum performance
@@ -144,7 +146,7 @@ class EventController extends Controller
                     'time' => $event->time,
                     'location' => $event->location,
                     'type' => $event->type,
-                    'image' => $event->image,
+                    'image' => $event->image ? asset($event->image) : null,
                     'user_id' => $event->user_id,
                     'categorie_id' => $event->categorie_id,
                     'created_at' => $event->created_at,
@@ -196,7 +198,10 @@ class EventController extends Controller
                     Storage::disk('public')->delete($currentEvent->image);
                 }
                 
-                $updateData['image'] = $request->file('image')->store('events', 'public');
+                $file = $request->file("image");
+                $img_name = $file->hashName();
+                $file->move(public_path("uploads"), $img_name);
+                $updateData["image"] = "uploads/" . $img_name;
             }
 
             // Direct database update for better performance
@@ -223,8 +228,8 @@ class EventController extends Controller
             $oldImage = $request->input('oldImage');
 
             // Delete the image file if exists
-            if ($oldImage && Storage::disk('public')->exists($oldImage)) {
-                Storage::disk('public')->delete($oldImage);
+            if ($oldImage && file_exists(public_path($oldImage))) {
+                unlink(public_path($oldImage));
             }
 
             // Direct database delete for better performance
@@ -266,7 +271,7 @@ class EventController extends Controller
                 'time' => $event->time,
                 'location' => $event->location,
                 'type' => $event->type,
-                'image' => $event->image,
+                'image' => $event->image ? asset($event->image) : null,
                 'user_id' => $event->user_id,
                 'categorie_id' => $event->categorie_id,
                 'created_at' => $event->created_at,
@@ -404,7 +409,7 @@ class EventController extends Controller
             'time_of_day' => $event->getTimeOfDay(),
             'location' => $event->getLocation()->getValue(),
             'type' => $event->getType()->getValue(),
-            'image' => $event->getImage(),
+            'image' => $event->hasImage() ? asset($event->getImage()) : null,
             'user_id' => $event->getUserId(),
             'category_id' => $event->getCategoryId(),
             'created_at' => $event->getCreatedAt()->format('Y-m-d H:i:s'),
