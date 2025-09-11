@@ -32,62 +32,62 @@
 
 			</div>
 
-			<!-- Begin Featured Image -->
-			<img class="featured-image img-fluid" src="{{ asset($post->getImage()) }}" alt="{{ $post->getTitle()->getValue() }}">
+			<!-- Begin Featured Image - Reduced Size -->
+			<img class="post-featured-image" src="{{ asset($post->getImage()) }}" alt="{{ $post->getTitle()->getValue() }}">
 			<!-- End Featured Image -->
 
-			<!-- Begin Event Details Section -->
-			<div class="event-details-section" style="background: #f8f9fa; padding: 30px; margin: 30px 0; border-radius: 8px; border-left: 4px solid #007bff;">
-				<h3 style="color: #007bff; margin-bottom: 25px; font-size: 24px;">
-					<i class="fa fa-calendar-alt" style="margin-right: 10px;"></i>Event Details
+			<!-- Begin Event Details Section - Improved Layout -->
+			<div class="event-details-section">
+				<h3>
+					<i class="fa fa-calendar-alt"></i>Event Details
 				</h3>
 				
 				<div class="row">
 					<div class="col-md-6">
-						<div class="detail-item" style="margin-bottom: 20px;">
-							<h5 style="color: #333; margin-bottom: 8px;">
-								<i class="fa fa-calendar" style="color: #007bff; margin-right: 8px;"></i>Date
+						<div class="event-detail-item">
+							<h5>
+								<i class="fa fa-calendar"></i>Date
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->getDate()->getHumanReadableDate() }}</p>
+							<p>{{ $post->getDate()->getHumanReadableDate() }}</p>
 						</div>
 						
 						@if($post->getTime()->getValue())
-						<div class="detail-item" style="margin-bottom: 20px;">
-							<h5 style="color: #333; margin-bottom: 8px;">
-								<i class="fa fa-clock" style="color: #007bff; margin-right: 8px;"></i>Time
+						<div class="event-detail-item">
+							<h5>
+								<i class="fa fa-clock-o"></i>Time
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->getTime()->getValue() }}</p>
+							<p>{{ $post->getTime()->getValue() }}</p>
 						</div>
 						@endif
 						
-						<div class="detail-item" style="margin-bottom: 20px;">
-							<h5 style="color: #333; margin-bottom: 8px;">
-								<i class="fa fa-map-marker-alt" style="color: #007bff; margin-right: 8px;"></i>Location
+						<div class="event-detail-item">
+							<h5>
+								<i class="fa fa-map-marker"></i>Location
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">{{ $post->getLocation()->getValue() }}</p>
+							<p>{{ $post->getLocation()->getValue() }}</p>
 						</div>
 					</div>
 					
 					<div class="col-md-6">
-						<div class="detail-item" style="margin-bottom: 20px;">
-							<h5 style="color: #333; margin-bottom: 8px;">
-								<i class="fa fa-tag" style="color: #007bff; margin-right: 8px;"></i>Category
+						<div class="event-detail-item">
+							<h5>
+								<i class="fa fa-tag"></i>Category
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">Category {{ $post->getCategoryId() }}</p>
+							<p>Category {{ $post->getCategoryId() }}</p>
 						</div>
 						
-						<div class="detail-item" style="margin-bottom: 20px;">
-							<h5 style="color: #333; margin-bottom: 8px;">
-								<i class="fa fa-user" style="color: #007bff; margin-right: 8px;"></i>Organized By
+						<div class="event-detail-item">
+							<h5>
+								<i class="fa fa-user"></i>Organized By
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">User {{ $post->getUserId() }}</p>
+							<p>User {{ $post->getUserId() }}</p>
 						</div>
 						
-						<div class="detail-item" style="margin-bottom: 20px;">
-							<h5 style="color: #333; margin-bottom: 8px;">
-								<i class="fa fa-info-circle" style="color: #007bff; margin-right: 8px;"></i>Event Type
+						<div class="event-detail-item">
+							<h5>
+								<i class="fa fa-info-circle"></i>Event Type
 							</h5>
-							<p style="font-size: 16px; margin: 0; color: #666;">
+							<p>
 								<span class="badge" style="background: {{ $post->getType()->getValue() == 'Feature' ? '#28a745' : '#17a2b8' }}; color: white; padding: 5px 10px; border-radius: 15px;">
 									{{ $post->getType()->getValue() }} Event
 								</span>
@@ -100,8 +100,8 @@
 
 			<!-- Begin Post Content -->
 			<div class="article-post">
-				<h3 style="color: #333; margin-bottom: 20px;">About This Event</h3>
-				<p style="font-size: 16px; line-height: 1.6; color: #555;">
+				<h3>About This Event</h3>
+				<p>
 					{{ $post->getDescription()->getValue() }}
 				</p>
 			</div>
@@ -115,33 +115,45 @@
 <!-- End Article
 ================================================== -->
 
-<!-- Add Font Awesome for icons if not already included -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
 <style>
-.event-details-section .detail-item h5 {
+.event-details-section .event-detail-item h5 {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 14px;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.registration-section:hover {
-    transform: translateY(-2px);
-    transition: all 0.3s ease;
-    box-shadow: 0 10px 25px rgba(0,123,255,0.3);
+.event-details-section .event-detail-item h5 i {
+    color: #00ab6b;
+    width: 16px;
+    text-align: center;
 }
 
-.tags li a {
-    background: #f8f9fa;
-    color: #007bff;
-    border: 1px solid #dee2e6;
-    text-transform: capitalize;
+.event-details-section .event-detail-item p {
+    margin-left: 24px;
+    font-size: 14px;
+    color: #666;
 }
 
-.tags li a:hover {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
+.badge {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+@media (max-width: 768px) {
+    .event-details-section .event-detail-item p {
+        margin-left: 0;
+        margin-top: 5px;
+    }
+    
+    .event-details-section .event-detail-item h5 {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
 }
 </style>
+
