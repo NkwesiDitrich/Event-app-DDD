@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\View\View;
 use App\Models\Registration;
+use App\Models\User;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Application\Queries\GetUserEventsQuery;
 use App\Application\Handlers\GetUserEventsHandler;
@@ -32,6 +34,10 @@ class HomeController extends Controller
             // Get recent events using DDD repository with pagination
             $recentEvents = $this->eventRepository->getEventsByTypeWithPagination('Recent', 6);
             
+            // Fetch user and category names for events
+            $featurEvents = $this->enrichEventsWithNames($featurEvents);
+            $recentEvents = $this->enrichEventsWithNames($recentEvents);
+            
             return view('frontend.pages.index-page', compact('featurEvents', 'recentEvents'));
         } catch (\Exception $e) {
             Log::error('Error in IndexPage: ' . $e->getMessage());
@@ -55,14 +61,17 @@ class HomeController extends Controller
                 abort(404, 'Event not found');
             }
             
-            // Get related events using DDD repository
-            $relatedEvents = $this->eventRepository->getRelatedEvents(
-                $post->getCategoryId(), 
-                $id, 
-                3
-            );
+            // Enrich the post with user and category names
+            $post = $this->enrichEventWithNames($post);
+            
+            // Note: Removed related events as per user request
+            // $relatedEvents = $this->eventRepository->getRelatedEvents(
+            //     $post->getCategoryId(), 
+            //     $id, 
+            //     3
+            // );
                 
-            return view('frontend.pages.post-page', compact('post', 'relatedEvents'));
+            return view('frontend.pages.post-page', compact('post'));
         } catch (\Exception $e) {
             Log::error('Error in PostPage: ' . $e->getMessage());
             
@@ -91,4 +100,49 @@ class HomeController extends Controller
             return redirect()->back()->with('error', 'Registration failed. Please try again later.');
         }
     }
+
+    /**
+     * Enrich events array with user and category names
+     */
+    private function enrichEventsWithNames(array $events): array
+    {
+        foreach ($events as $event) {
+            $this->enrichEventWithNames($event);
+        }
+        return $events;
+    }
+
+    /**
+     * Enrich single event with user and category names
+     */
+    private function enrichEventWithNames($event)
+    {
+        try {
+            // Get user name
+            $user = User::find($event->getUserId());
+            if ($user) {
+                $event->organizerName = trim($user->firstName . ' ' . $user->lastName);
+                if (empty($event->organizerName)) {
+                    $event->organizerName = $user->email; // Fallback to email if no name
+                }
+            } else {
+                $event->organizerName = 'Unknown Organizer';
+            }
+
+            // Get category name
+            $category = Category::find($event->getCategoryId());
+            if ($category) {
+                $event->categoryName = $category->name;
+            } else {
+                $event->categoryName = 'Uncategorized';
+            }
+        } catch (\Exception $e) {
+            Log::error('Error enriching event with names: ' . $e->getMessage());
+            $event->organizerName = 'Unknown Organizer';
+            $event->categoryName = 'Uncategorized';
+        }
+
+        return $event;
+    }
 }
+

@@ -17,17 +17,27 @@
                         <h3 class="event-card-title">
                             <a href="{{ url('/post'.'/'.$recent->getId())}}">{{ $recent->getTitle()->getValue() }}</a>
                         </h3>
-                        <p class="event-card-description">{{  Str::limit($recent->getDescription()->getValue(),100)  }}</p>
-                        <div class="event-card-meta">
-                            <div class="event-card-author">
-                                <img src="{{ asset('My_avatar.jpeg') }}" alt="Organizer">
-                                <div class="event-card-author-info">
-                                    <div class="event-card-author-name">User {{ $recent->getUserId() }}</div>
-                                    <div class="event-card-date">{{ $recent->getDate()->getHumanReadableDate() }}</div>
-                                </div>
+                        <div class="event-card-info">
+                            <div class="event-info-item">
+                                <i class="fa fa-calendar"></i>
+                                <span>{{ $recent->getDate()->getHumanReadableDate() }}</span>
                             </div>
-                            <a href="{{ url('/post'.'/'.$recent->getId())}}" class="event-card-read-more" title="Read Story">
-                                Read More
+                            <div class="event-info-item">
+                                <i class="fa fa-clock-o"></i>
+                                <span>{{ $recent->getTime()->getValue() ?: 'Time TBA' }}</span>
+                            </div>
+                            <div class="event-info-item">
+                                <i class="fa fa-map-marker"></i>
+                                <span>{{ $recent->getLocation()->getValue() }}</span>
+                            </div>
+                            <div class="event-info-item">
+                                <i class="fa fa-user"></i>
+                                <span>{{ $recent->organizerName ?? 'Unknown Organizer' }}</span>
+                            </div>
+                        </div>
+                        <div class="event-card-footer">
+                            <a href="{{ url('/post'.'/'.$recent->getId())}}" class="event-card-read-more" title="View Event Details">
+                                View Details
                             </a>
                         </div>
                     </div>

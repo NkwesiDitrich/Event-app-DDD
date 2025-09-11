@@ -14,8 +14,8 @@
 <link href="https://fonts.googleapis.com/css?family=Righteous" rel="stylesheet">
 <!-- Custom styles for this template -->
 <link href="{{ asset('frontend/css/arise.css')}}" rel="stylesheet">
-<!-- Improved styles for card dimensions and post page -->
-<link href="{{ asset('frontend/css/improved-styles.css')}}" rel="stylesheet">
+<!-- Improved styles for event cards with organizer names and category names -->
+<link href="{{ asset('frontend/css/improved-event-cards.css')}}" rel="stylesheet">
 </head>
 <body>
 @include('frontend.components.home.nav')
