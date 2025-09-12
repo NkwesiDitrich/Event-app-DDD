@@ -10,6 +10,13 @@ use App\Application\Handlers\Registration\CheckInParticipantHandler;
 use App\Application\Handlers\Registration\UnattendParticipantHandler;
 use App\Application\Handlers\Registration\GetUserRegistrationsHandler;
 use App\Infrastructure\Persistence\EloquentEventRepository;
+
+// NEW: Import the enhanced User Management handlers
+use App\Application\Handlers\UserManagement\GetEventParticipantsHandler;
+use App\Application\Handlers\UserManagement\GetEventsCreatedHandler;
+use App\Application\Queries\UserManagement\GetEventParticipantsQuery;
+use App\Application\Queries\UserManagement\GetEventsCreatedQuery;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -21,11 +28,18 @@ class UserManagementController extends Controller
         private CheckInParticipantHandler $checkInHandler,
         private UnattendParticipantHandler $unattendHandler,
         private GetUserRegistrationsHandler $getUserRegistrationsHandler,
-        private EloquentEventRepository $eventRepository
+        private EloquentEventRepository $eventRepository,
+        // NEW: Add the enhanced handlers
+        private GetEventParticipantsHandler $getEventParticipantsHandler,
+        private GetEventsCreatedHandler $getEventsCreatedHandler
     ) {}
 
+    // ========================================
+    // EXISTING METHODS (Keep as they are)
+    // ========================================
+
     /**
-     * Display the User Management page
+     * Display the User Management page (EXISTING - Keep this)
      */
     public function UserManagementPage(Request $request): View
     {
@@ -55,7 +69,7 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Get list of registrations for API
+     * Get list of registrations for API (EXISTING - Keep this)
      */
     public function RegistrationList(Request $request): JsonResponse
     {
@@ -97,8 +111,121 @@ class UserManagementController extends Controller
         }
     }
 
+    // ========================================
+    // NEW ENHANCED DROPDOWN METHODS
+    // ========================================
+
     /**
-     * Check in a participant
+     * NEW: User Management Dashboard (Main dropdown page)
+     */
+    public function UserManagementDashboard(): View
+    {
+        return view('backend.pages.dashboard.user-management-dashboard');
+    }
+
+    /**
+     * NEW: Event Participants Page (Dropdown option 1)
+     */
+    public function EventParticipantsPage(): View
+    {
+        return view('backend.pages.dashboard.event-participants-page');
+    }
+
+    /**
+     * NEW: Events Created Page (Dropdown option 2)
+     */
+    public function EventsCreatedPage(): View
+    {
+        return view('backend.pages.dashboard.events-created-page');
+    }
+
+    /**
+     * NEW: Get Event Participants (AJAX endpoint)
+     */
+    public function GetEventParticipants(Request $request): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            $eventId = $request->get('event_id');
+            $status = $request->get('status');
+            $page = (int) $request->get('page', 1);
+            $perPage = (int) $request->get('per_page', 10);
+
+            $query = new GetEventParticipantsQuery($userId, $eventId, $status, $page, $perPage);
+            $result = $this->getEventParticipantsHandler->handle($query);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get event participants error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load event participants'
+            ], 500);
+        }
+    }
+
+    /**
+     * NEW: Get Events Created (AJAX endpoint)
+     */
+    public function GetEventsCreated(Request $request): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            $status = $request->get('status');
+            $page = (int) $request->get('page', 1);
+            $perPage = (int) $request->get('per_page', 12);
+
+            $query = new GetEventsCreatedQuery($userId, $status, $page, $perPage);
+            $result = $this->getEventsCreatedHandler->handle($query);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $result
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get events created error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load events created'
+            ], 500);
+        }
+    }
+
+    /**
+     * NEW: Get Event Participants by Event ID (for modal)
+     */
+    public function GetEventParticipantsByEventId(Request $request, $eventId): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            
+            $query = new GetEventParticipantsQuery($userId, $eventId, null, 1, 100);
+            $result = $this->getEventParticipantsHandler->handle($query);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'participants' => $result['participants'] ?? []
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get event participants by ID error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load event participants'
+            ], 500);
+        }
+    }
+
+    // ========================================
+    // EXISTING METHODS (Keep as they are)
+    // ========================================
+
+    /**
+     * Check in a participant (EXISTING - Keep this, but enhance it)
      */
     public function CheckInParticipant(Request $request): JsonResponse
     {
@@ -139,7 +266,7 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Unattend a participant (remove registration)
+     * Unattend a participant (EXISTING - Keep this)
      */
     public function UnattendParticipant(Request $request): JsonResponse
     {
@@ -178,7 +305,7 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Get events in format compatible with view expectations
+     * Get events in format compatible with view expectations (EXISTING - Keep this)
      */
     private function getViewCompatibleEvents($userId)
     {

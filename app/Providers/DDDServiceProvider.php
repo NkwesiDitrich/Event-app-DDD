@@ -19,6 +19,10 @@ use App\Application\Handlers\Registration\CheckInParticipantHandler;
 use App\Application\Handlers\Registration\UnattendParticipantHandler;
 use App\Application\Handlers\Registration\GetUserRegistrationsHandler;
 
+// NEW: User Management Handlers (Enhanced Dropdown Functionality)
+use App\Application\Handlers\UserManagement\GetEventParticipantsHandler;
+use App\Application\Handlers\UserManagement\GetEventsCreatedHandler;
+
 class DDDServiceProvider extends ServiceProvider
 {
     /**
@@ -26,6 +30,10 @@ class DDDServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // ========================================
+        // EXISTING BINDINGS (Keep as they are)
+        // ========================================
+        
         // Bind Repository Interface to Implementation
         $this->app->bind(EventRepositoryInterface::class, EloquentEventRepository::class);
         $this->app->bind(RegistrationRepositoryInterface::class, EloquentRegistrationRepository::class);
@@ -88,6 +96,25 @@ class DDDServiceProvider extends ServiceProvider
         // Register Registration Query Handlers
         $this->app->singleton(GetUserRegistrationsHandler::class, function ($app) {
             return new GetUserRegistrationsHandler(
+                $app->make(RegistrationRepositoryInterface::class)
+            );
+        });
+
+        // ========================================
+        // NEW: Enhanced User Management Handlers
+        // ========================================
+
+        // Register Enhanced User Management Query Handlers
+        $this->app->singleton(GetEventParticipantsHandler::class, function ($app) {
+            return new GetEventParticipantsHandler(
+                $app->make(RegistrationRepositoryInterface::class),
+                $app->make(EventRepositoryInterface::class)
+            );
+        });
+
+        $this->app->singleton(GetEventsCreatedHandler::class, function ($app) {
+            return new GetEventsCreatedHandler(
+                $app->make(EventRepositoryInterface::class),
                 $app->make(RegistrationRepositoryInterface::class)
             );
         });
