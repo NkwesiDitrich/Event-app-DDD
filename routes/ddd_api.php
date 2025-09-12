@@ -52,3 +52,27 @@ Route::prefix('events')->group(function () {
     Route::get('/today', [EventController::class, 'today'])->name('events.today');
     
 });
+
+// User Management Routes (DDD Style)
+use App\Infrastructure\Http\UserManagementController;
+
+Route::middleware(['auth'])->group(function () {
+    
+    // User Management Page
+    Route::get('/user-management', [UserManagementController::class, 'UserManagementPage'])->name('user-management.page');
+    
+    // User Management API Routes
+    Route::prefix('user-management')->group(function () {
+        
+        // Get registrations list
+        Route::get('/registrations', [UserManagementController::class, 'RegistrationList'])->name('user-management.registrations');
+        
+        // Check-in/Check-out participant
+        Route::post('/check-in', [UserManagementController::class, 'CheckInParticipant'])->name('user-management.check-in');
+        
+        // Unattend participant (remove registration)
+        Route::post('/unattend', [UserManagementController::class, 'UnattendParticipant'])->name('user-management.unattend');
+        
+    });
+    
+});

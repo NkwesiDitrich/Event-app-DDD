@@ -12,6 +12,13 @@ use App\Application\Handlers\DeleteEventHandler;
 use App\Application\Handlers\GetEventHandler;
 use App\Application\Handlers\GetUserEventsHandler;
 
+// Registration Domain Bindings
+use App\Domain\Registration\Repositories\RegistrationRepositoryInterface;
+use App\Infrastructure\Persistence\EloquentRegistrationRepository;
+use App\Application\Handlers\Registration\CheckInParticipantHandler;
+use App\Application\Handlers\Registration\UnattendParticipantHandler;
+use App\Application\Handlers\Registration\GetUserRegistrationsHandler;
+
 class DDDServiceProvider extends ServiceProvider
 {
     /**
@@ -21,6 +28,7 @@ class DDDServiceProvider extends ServiceProvider
     {
         // Bind Repository Interface to Implementation
         $this->app->bind(EventRepositoryInterface::class, EloquentEventRepository::class);
+        $this->app->bind(RegistrationRepositoryInterface::class, EloquentRegistrationRepository::class);
 
         // Register Domain Service
         $this->app->singleton(EventDomainService::class, function ($app) {
@@ -29,7 +37,7 @@ class DDDServiceProvider extends ServiceProvider
             );
         });
 
-        // Register Command Handlers
+        // Register Event Command Handlers
         $this->app->singleton(CreateEventHandler::class, function ($app) {
             return new CreateEventHandler(
                 $app->make(EventRepositoryInterface::class),
@@ -51,7 +59,7 @@ class DDDServiceProvider extends ServiceProvider
             );
         });
 
-        // Register Query Handlers
+        // Register Event Query Handlers
         $this->app->singleton(GetEventHandler::class, function ($app) {
             return new GetEventHandler(
                 $app->make(EventRepositoryInterface::class)
@@ -61,6 +69,26 @@ class DDDServiceProvider extends ServiceProvider
         $this->app->singleton(GetUserEventsHandler::class, function ($app) {
             return new GetUserEventsHandler(
                 $app->make(EventRepositoryInterface::class)
+            );
+        });
+
+        // Register Registration Command Handlers
+        $this->app->singleton(CheckInParticipantHandler::class, function ($app) {
+            return new CheckInParticipantHandler(
+                $app->make(RegistrationRepositoryInterface::class)
+            );
+        });
+
+        $this->app->singleton(UnattendParticipantHandler::class, function ($app) {
+            return new UnattendParticipantHandler(
+                $app->make(RegistrationRepositoryInterface::class)
+            );
+        });
+
+        // Register Registration Query Handlers
+        $this->app->singleton(GetUserRegistrationsHandler::class, function ($app) {
+            return new GetUserRegistrationsHandler(
+                $app->make(RegistrationRepositoryInterface::class)
             );
         });
     }
